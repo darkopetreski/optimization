@@ -39,21 +39,7 @@ class CuttingStock:
             patterns.append(pat)
         
         return patterns
-        
-    #TODO: dali e potrebna ovaa funkcija ? 
-    #def multiplyLengthsQuantities(self, w, b):
-    #    """
-    #    @param w: list, lengths that we need, ex. [1, 2]
-    #    @param b: list, quantities for each length,  ex. [3, 4]
-    #    @return:  list, repeated widths, ex.[1 1 1 2 2 2 2]
-    #    """
-    #    result = []
-    #    for i in range(len(w)):
-    #        for j in range(b[i]):
-    #            result.append(w[i])
-    #            
-    #    return result
-        
+    
         
     def knapsack(self, f, d, b):
         """
@@ -81,36 +67,46 @@ class CuttingStock:
         problem += sum( f[r] * x[r] for r in range(nrCols))
         
         #status = problem.solve(pulp.GLPK(msg = 0))
+        #problem.writeLP("/tmp/knapsack.lp")
         status = problem.solve()
         if self.LOG:
             print problem
-            
+           
         return ([pulp.value(a) for a in x], pulp.value(problem.objective))
         
         
-    def getShadowPrice(self):
+    def getShadowPrices(self, patterns, b):
         """
+        Get shadow prices from the matrig (list of patterns)
+        
+        @param patterns list of patterns. each pattern has length w
+        @param b, list of quantities with length w
+        
+        @return list of shaddow prices 
         """
+        nrPatterns = len(patterns)
+        patternLength = len(patterns[0])
+        
         problem = pulp.LpProblem("Shadow", pulp.LpMinimize)
-        x1 = pulp.LpVariable("x1")
-        x2 = pulp.LpVariable("x2")
-        x3 = pulp.LpVariable("x3")
-        x4 = pulp.LpVariable("x4")
         
-        c1 = 7*x1 >= 211
-        c2 = 3*x2 >= 395
-        c3 = 2*x3 >= 610
-        c4 = 2*x4 >= 97
+        x = []
+        for r in range(nrPatterns):
+            # Create variables Xi
+            x.append(pulp.LpVariable("x%d"%r))
         
-        problem += x1 + x2 + x3 + x4
-        problem += c1
-        problem += c2
-        problem += c3
-        problem += c4
+        problem += sum([var for var in x])
         
+        const = []        
+        for i in range(patternLength):
+            # list of constraints
+            c = sum([ x[r] * patterns[r][i] for r in range(nrPatterns) ]) >= b[i]
+            const.append(c)
+            problem += c
+        
+        #problem.writeLP("/tmp/shadow.lp")
         status = problem.solve()
         
-        return [c4.pi, c3.pi, c2.pi, c1.pi]
+        return [c.pi for c in const]
         
 def getInputData():
     """
@@ -134,12 +130,15 @@ def getInputData():
 
 if __name__ == "__main__":
     
-    
+    W = 100
+    w = [14, 31, 36, 45]
+    q = [211,395,610,97]
     
     import sys
     c = CuttingStock(None, None, None)
-    pi = c.getShadowPrice()
-    print c.knapsack(pi, [45, 36, 31, 14], 100)
+    pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
+    print pi;
+    print c.knapsack(pi, w, W)
     
     sys.exit(0)
     
