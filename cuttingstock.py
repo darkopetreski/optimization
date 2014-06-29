@@ -96,17 +96,14 @@ class CuttingStock:
         
         problem += sum([var for var in x])
         
-        const = []        
         for i in range(patternLength):
             # list of constraints
-            c = sum([ x[r] * patterns[r][i] for r in range(nrPatterns) ]) >= b[i]
-            const.append(c)
-            problem += c
+            problem += sum([ x[r] * patterns[r][i] for r in range(nrPatterns) ]) >= b[i], "c%d"%i
         
         #problem.writeLP("/tmp/shadow.lp")
         status = problem.solve()
         
-        return [c.pi for c in const]
+        return [c.pi for name, c in problem.constraints.items()]
         
 def getInputData():
     """
@@ -136,7 +133,9 @@ if __name__ == "__main__":
     
     import sys
     c = CuttingStock(None, None, None)
-    pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
+    #pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
+    pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2]], q)
+    
     print pi;
     print c.knapsack(pi, w, W)
     
