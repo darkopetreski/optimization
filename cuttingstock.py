@@ -92,7 +92,7 @@ class CuttingStock:
         x = []
         for r in range(nrPatterns):
             # Create variables Xi
-            x.append(pulp.LpVariable("x%d"%r))
+            x.append(pulp.LpVariable("x%d"%r, 0))
         
         problem += sum([var for var in x])
         
