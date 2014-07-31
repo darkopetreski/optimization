@@ -21,7 +21,7 @@ class CuttingStock:
         
         
         
-    def getInitialPatterns(self, W, w):
+    def getInitialPatterns(self, W, w, q):
         """
         @param W  int, the lenght of the stock
         @param w  list of needed widths
@@ -36,12 +36,14 @@ class CuttingStock:
         for i, width in enumerate(w):
             pat = [0] * listSize
             pat[i] = int(W/width)
+            if (pat[i]>q[i]):
+                pat[i] = q[i]
             patterns.append(pat)
         
         return patterns
     
         
-    def knapsack(self, f, d, b):
+    def knapsack(self, f, d, b, quantities):
         """
         max z: f1X1 + ... + frXr
                d1X1 + ... + frXr <= b
@@ -61,7 +63,7 @@ class CuttingStock:
         x = []
         for r in range(nrCols):
             # Create variables Xi, int, >=0
-            x.append(pulp.LpVariable("x%d"%r , 0, None, pulp.LpInteger))
+            x.append(pulp.LpVariable("x%d"%r , 0, quantities[r], pulp.LpInteger))
         
         problem += sum( d[r] * x[r] for r in range(nrCols)) <= b
         problem += sum( f[r] * x[r] for r in range(nrCols))
@@ -127,14 +129,47 @@ def getInputData():
 
 if __name__ == "__main__":
     
-    W = 100
-    w = [14, 31, 36, 45]
-    q = [211,395,610,97]
+    W = 10
+    w = [6, 5, 4, 3, 2]
+    q = [1,1, 1, 1, 1]
+    #W = 100
+    #w = [14, 31, 36, 45]
+    #q = [211,395,610,97]
+
     
     import sys
-    c = CuttingStock(None, None, None)
+    c = CuttingStock(W, w, q);
+    
+    patterns = c.getInitialPatterns(W, w, q)
+    print "initial patterns"
+    print patterns
+    
+    nesto = 10
+    while (nesto > 1.00001):
+        
+        print ""
+        print "Next iteration"
+        
+        pi = c.getShadowPrices(patterns, q)
+        print "shaddow prices of the patterns"
+        print pi
+    
+        knapsack = c.knapsack(pi, w, W, q)
+        print "new pattern"
+        print knapsack
+    
+        nesto = knapsack[1]
+        patterns.append(knapsack[0])
+        print "now patterns are"
+        print patterns
+        
+    
+    
+    sys.exit(0)
+    
+    
     #pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
-    pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2]], q)
+    pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
     
     print pi;
     print c.knapsack(pi, w, W)
@@ -152,5 +187,4 @@ if __name__ == "__main__":
     c.solve();
     
     print c.knapsack([1.0/2, 1.0/2, 1.0/3, 1.0/7], [45, 36, 31, 14], 100)
-    
-    
+ 
