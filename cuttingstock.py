@@ -36,8 +36,8 @@ class CuttingStock:
         for i, width in enumerate(w):
             pat = [0] * listSize
             pat[i] = int(W/width)
-            if (pat[i]>q[i]):
-                pat[i] = q[i]
+            #if (pat[i]>q[i]):
+            #    pat[i] = q[i]
             patterns.append(pat)
         
         return patterns
@@ -106,6 +106,44 @@ class CuttingStock:
         status = problem.solve()
         
         return [c.pi for name, c in problem.constraints.items()]
+    
+    
+    def pickPatterns(self, allPatterns, quantities):
+        
+        problem = pulp.LpProblem("PickPatterns", pulp.LpMinimize)
+        
+        nrPatterns = len(allPatterns)
+        nrRows = len(quantities)
+        
+        x = []
+        for c in range(nrPatterns):
+            x.append(pulp.LpVariable("x%d"%c , 0, None))
+        
+        problem += sum([var for var in x])
+        
+        for r in range(nrRows):
+            constraints = []
+            for c in range(nrPatterns):
+                constraints.append(x[c] * allPatterns[c][r]);
+            problem += sum(constraints) >= quantities[r]
+        
+        
+        #print problem
+        
+        status = problem.solve()
+        #status = problem.solve(pulp.GLPK(msg = 0))
+        if self.LOG:
+            print problem
+        
+        print x
+        print [pulp.value(a) for a in x]
+        print allPatterns
+        return
+    
+        return ([pulp.value(a) for a in x], pulp.value(problem.objective))
+        
+        
+        
         
 def getInputData():
     """
@@ -140,6 +178,11 @@ if __name__ == "__main__":
     import sys
     c = CuttingStock(W, w, q);
     
+    #testPatterns = [ [0,0,0,2], [0,0,2,0], [0,2,1,0], [2,0,2,0] ]
+    #c.pickPatterns(testPatterns, q)
+    
+    #sys.exit(0)
+    
     patterns = c.getInitialPatterns(W, w, q)
     print "initial patterns"
     print patterns
@@ -163,7 +206,7 @@ if __name__ == "__main__":
         print "now patterns are"
         print patterns
         
-    
+    c.pickPatterns(patterns, q)
     
     sys.exit(0)
     
