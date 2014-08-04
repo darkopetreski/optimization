@@ -1,4 +1,5 @@
 import pulp
+import math
 
 class CuttingStock:
     """
@@ -11,17 +12,99 @@ class CuttingStock:
         w - list of lengths that we need
         b - list of quantities for each length. 
         """
-        self.W = w
+        self.W = W
         self.w = w
         self.b = b
         
         
     def solve(self):
-        pass
+        """
+        Round the solution to ingeger. 
+        then check if the patterns matches the total number. if not
+        find the difference and do the same thing to the difference untill
+        we meet the desired quantities
+        """
+        
+        qLeft = list(self.b)
+        
+        patternsData = self.solvePartial(qLeft)
+        qLeft = self.getLeftQuantities(patternsData)
+        
+        #print "-----------------------"
+        #print patternsData
+        #print qLeft
+        #print "-----------------------"
+        
+        #print " === " , self.solvePartial(qLeft)
+        
+        #patternsData.extend(self.solvePartial(qLeft))
+        #qLeft = self.getLeftQuantities(patternsData)
+        #print "-----------------------"
+        #print patternsData
+        #print qLeft
+        #print "-----------------------"
+        
+        while not self.isQuantityEmpty(qLeft):
+            patternsData.extend(self.solvePartial(qLeft))
+            qLeft = self.getLeftQuantities(patternsData)
+        
+        return patternsData
         
         
+    def getLeftQuantities(self, patterns):
+        leftQuantities = list(self.b) # make a copy of the list
+        for i, p in enumerate(patterns):
+            nrPatters = p[0]
+            patterns = p[1]
+            
+            for c, q in enumerate(self.b):
+                leftQuantities[c] = leftQuantities[c] - nrPatters * patterns[c]
+                
+        return leftQuantities
+    
+    
+    def isQuantityEmpty(self, quantities):
+        for q in quantities:
+            if q>0:
+                return False
+        return True
+    
+    
+    def formatPatterns(self, patterns):
+        """
+        """
+        formated = []
+        for i, p in enumerate(patterns):
+            tmp = []
+            tmp.append(p[0]) # nr of patterns used
+            
+            tmpPat = []
+            for c, q in enumerate(self.b):
+                if p[1][c] > 0:
+                    tmpPat.append("%smm X %s"%(self.w[c], p[1][c]))
+                
+            tmp.append(tmpPat)
+            
+            formated.append(tmp)
+            
+        return formated
+    
+    
+    def solvePartial(self, b):
         
-    def getInitialPatterns(self, W, w, q):
+        patterns = self.getInitialPatterns(b)
+        
+        nesto = 10
+        while (nesto > 1.00000001):            
+            pi = self.getShadowPrices(patterns, b)
+            knapsack = self.knapsack(pi, self.w, self.W, b)
+            patterns.append(knapsack[0])
+            nesto = knapsack[1]
+            
+        return self.pickPatterns(patterns, b)
+        
+        
+    def getInitialPatterns(self, b):
         """
         @param W  int, the lenght of the stock
         @param w  list of needed widths
@@ -31,13 +114,14 @@ class CuttingStock:
         will return
         [ [5, 0, 0], [0, 3, 0], [0, 0, 2]  ] 
         """
-        listSize = len(w)
+        
+        listSize = len(self.w)
         patterns = []
-        for i, width in enumerate(w):
+        for i, width in enumerate(self.w):
             pat = [0] * listSize
-            pat[i] = int(W/width)
-            #if (pat[i]>q[i]):
-            #    pat[i] = q[i]
+            pat[i] = int(self.W/width)
+            if (pat[i]>b[i]):
+                pat[i] = b[i]
             patterns.append(pat)
         
         return patterns
@@ -102,7 +186,7 @@ class CuttingStock:
             # list of constraints
             problem += sum([ x[r] * patterns[r][i] for r in range(nrPatterns) ]) >= b[i], "c%d"%i
         
-        #problem.writeLP("/tmp/shadow.lp")
+        #problem.writeLP("/tmp/shadow.lp")[0.33333333, [0, 3, 0, 0]], [0.4, [0, 0, 5, 0]]
         status = problem.solve()
         
         return [c.pi for name, c in problem.constraints.items()]
@@ -135,99 +219,87 @@ class CuttingStock:
         if self.LOG:
             print problem
         
-        print x
-        print [pulp.value(a) for a in x]
-        print allPatterns
-        return
-    
-        return ([pulp.value(a) for a in x], pulp.value(problem.objective))
+        chosenPatterns = []
+        pickedNumbers =  [pulp.value(a) for a in x]
+        for r in range(len(pickedNumbers)):
+            nrPickedPatterns = math.floor(pickedNumbers[r])
+            if (nrPickedPatterns > 0):
+                chosenPatterns.append([nrPickedPatterns, allPatterns[r]])
         
-        
-        
-        
-def getInputData():
-    """
-    Returns:
-        (W, w, b)
-         W - int, length of the stocks needed to be cut
-         w - list of lengths that we need
-         b - list of quantities for each length. 
-    The size of the w and b must be the same.
-    """
-    
-    # length of the stock rods
-    W = 10; 
-    # list of lengths of the desired orders
-    w = [6, 5, 4, 3, 2]    
-    # list of quantities for each ordered length
-    b = [1, 1, 1, 1, 1]
-    
-    return (W, w, b)
-
+        return chosenPatterns;
+   
 
 if __name__ == "__main__":
     
-    W = 10
-    w = [6, 5, 4, 3, 2]
-    q = [1,1, 1, 1, 1]
-    #W = 100
-    #w = [14, 31, 36, 45]
-    #q = [211,395,610,97]
-
+    #W = 10
+    #w = [6, 5, 4, 3, 2]
+    #q = [1, 1, 1, 1, 1]
+    
+    W = 100
+    w = [14, 31, 36, 45]
+    q = [211,395,610,97]
+    
+    #W = 10
+    #w = [1]
+    #q = [12]
     
     import sys
-    c = CuttingStock(W, w, q);
+    c = CuttingStock(W, w, q)
+    patterns = c.solve()
+    print c.formatPatterns(patterns)
+    sys.exit(0)
+    
     
     #testPatterns = [ [0,0,0,2], [0,0,2,0], [0,2,1,0], [2,0,2,0] ]
     #c.pickPatterns(testPatterns, q)
     
     #sys.exit(0)
     
-    patterns = c.getInitialPatterns(W, w, q)
-    print "initial patterns"
-    print patterns
+    #patterns = c.getInitialPatterns(W, w, q)
+    #print "initial patterns"
+    #print patterns
     
-    nesto = 10
-    while (nesto > 1.00001):
+    #nesto = 10
+    #while (nesto > 1.00000001):
+    #    
+    #    print ""
+    #    print "Next iteration"
+    #    
+    #    pi = c.getShadowPrices(patterns, q)
+    #    print "shaddow prices of the patterns"
+    #    print pi
+   # 
+   #     knapsack = c.knapsack(pi, w, W, q)
+   #     print "new pattern"
+    #    print knapsack
+   # 
+    #    nesto = knapsack[1]
+    #    patterns.append(knapsack[0])
+    #    print "now patterns are"
+     #   print patterns
         
-        print ""
-        print "Next iteration"
-        
-        pi = c.getShadowPrices(patterns, q)
-        print "shaddow prices of the patterns"
-        print pi
+    #c.pickPatterns(patterns, q)
     
-        knapsack = c.knapsack(pi, w, W, q)
-        print "new pattern"
-        print knapsack
-    
-        nesto = knapsack[1]
-        patterns.append(knapsack[0])
-        print "now patterns are"
-        print patterns
-        
-    c.pickPatterns(patterns, q)
-    
-    sys.exit(0)
+    #sys.exit(0)
     
     
     #pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
-    pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
+    #pi = c.getShadowPrices([[7,0,0,0], [0,3,0,0], [0,0,2,0], [0,0,0,2], [2,0,2,0], [0,2,1,0]], q)
     
-    print pi;
-    print c.knapsack(pi, w, W)
+    #print pi;
+    #print c.knapsack(pi, w, W)
     
-    sys.exit(0)
+    #sys.exit(0)
     
-    W, w, b = getInputData();
-    print "Stock length     ", W
-    print "Order lengths    ", w
-    print "Order quantities ", b
+    #W, w, b = getInputData();
+    #print "Stock length     ", W
+    #print "Order lengths    ", w
+    #print "Order quantities ", b
     
-    CuttingStock.LOG = True
+    #CuttingStock.LOG = True
     
-    c = CuttingStock(W, w, b); 
-    c.solve();
+    #c = CuttingStock(W, w, b); 
+    #c.solve();
     
-    print c.knapsack([1.0/2, 1.0/2, 1.0/3, 1.0/7], [45, 36, 31, 14], 100)
+    #print c.knapsack([1.0/2, 1.0/2, 1.0/3, 1.0/7], [45, 36, 31, 14], 100)
  
