@@ -45,9 +45,23 @@ class CuttingStock:
         #print "-----------------------"
         
         while not self.isQuantityEmpty(qLeft):
-            patternsData.extend(self.solvePartial(qLeft))
+            
+            newPatterns = self.solvePartial(qLeft)
+            
+            #print "new patterns"
+            #print newPatterns
+            
+            patternsData.extend(newPatterns)
             qLeft = self.getLeftQuantities(patternsData)
-        
+            
+            #print "------------------------------------------------"
+            #print "quantities still not empty."
+            #print qLeft
+            #print "pattenrs"
+            #print patternsData
+            #print ""
+            #print ""
+            
         return patternsData
         
         
@@ -101,6 +115,18 @@ class CuttingStock:
             patterns.append(knapsack[0])
             nesto = knapsack[1]
             
+            #print "next iteration"
+            #print pi
+            #print knapsack
+            #print "objective ", nesto
+            #print patterns
+            #print ""
+            #print ""
+            
+        #print "---------------------------------------------"
+        #print "biram nekolku patterni od mnozestvoto"    
+        #print patterns    
+        
         return self.pickPatterns(patterns, b)
         
         
@@ -201,7 +227,7 @@ class CuttingStock:
         
         x = []
         for c in range(nrPatterns):
-            x.append(pulp.LpVariable("x%d"%c , 0, None))
+            x.append(pulp.LpVariable("x%d"%c , 0, None, pulp.LpInteger))
         
         problem += sum([var for var in x])
         
@@ -214,10 +240,15 @@ class CuttingStock:
         
         #print problem
         
+        #print problem
+        
         status = problem.solve()
         #status = problem.solve(pulp.GLPK(msg = 0))
         if self.LOG:
             print problem
+        
+        
+        #print [pulp.value(a) for a in x]
         
         chosenPatterns = []
         pickedNumbers =  [pulp.value(a) for a in x]
@@ -231,22 +262,33 @@ class CuttingStock:
 
 if __name__ == "__main__":
     
-    #W = 10
-    #w = [6, 5, 4, 3, 2]
-    #q = [1, 1, 1, 1, 1]
+    W = 10
+    w = [6, 5, 4, 3, 2]
+    q = [1, 1, 1, 1, 1]
     
-    W = 100
-    w = [14, 31, 36, 45]
-    q = [211,395,610,97]
+    #W = 100
+    #w = [14, 31, 36, 45]
+    #q = [211,395,610,97]
     
     #W = 10
-    #w = [1]
+    #w = [2]
     #q = [12]
+    
+    W = 5600
+    w = [1380,1520,1560,1710,1820,1880,1930,2000,2050,2100,2140,2150,2200]
+    q = [22,25,12,14,18,18,20,10,12,14,16,18,20]
+    #q = [1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0]
+    
+    #W = 5600
+    #w = [1380,1520,1560,1710,1880,2000,2050,2150,2200]
+    #q = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+    
     
     import sys
     c = CuttingStock(W, w, q)
     patterns = c.solve()
-    print c.formatPatterns(patterns)
+    for p in c.formatPatterns(patterns):
+        print p
     sys.exit(0)
     
     
