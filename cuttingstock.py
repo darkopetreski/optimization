@@ -168,7 +168,7 @@ class CuttingStock:
         """
         problem = pulp.LpProblem("Knapsakc", pulp.LpMaximize)
         
-        nrCols = len(f)
+        nrCols = len(f)       
         
         x = []
         for r in range(nrCols):
@@ -225,6 +225,11 @@ class CuttingStock:
         nrPatterns = len(allPatterns)
         nrRows = len(quantities)
         
+        
+#TODO:   ogranicuvane na x na pulp.LpInteger dava pogresni rezultati
+# no ako ne ja ognrancis ima slucai (toj od vikipedia) kade sto vraca solucina od samo decimalni pa
+# zaokruzeno na integer vraca prasno resenie i algoritmot ne zvrsvuva nikogas
+
         x = []
         for c in range(nrPatterns):
             x.append(pulp.LpVariable("x%d"%c , 0, None, pulp.LpInteger))
@@ -264,20 +269,19 @@ if __name__ == "__main__":
     
     W = 10
     w = [6, 5, 4, 3, 2]
-    q = [1, 1, 1, 1, 1]
+    q = [1, 1, 1, 1, 2]
     
     #W = 100
     #w = [14, 31, 36, 45]
     #q = [211,395,610,97]
     
     #W = 10
-    #w = [2]
+    #w = [1]
     #q = [12]
     
-    W = 5600
-    w = [1380,1520,1560,1710,1820,1880,1930,2000,2050,2100,2140,2150,2200]
-    q = [22,25,12,14,18,18,20,10,12,14,16,18,20]
-    #q = [1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0]
+    #W = 5600
+    #w = [1380,1520,1560,1710,1820,1880,1930,2000,2050,2100,2140,2150,2200]
+    #q = [22,25,12,14,18,18,20,10,12,14,16,18,20]
     
     #W = 5600
     #w = [1380,1520,1560,1710,1880,2000,2050,2150,2200]
